@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .debug-info {
+            background: #e9ecef;
+            padding: 15px;
+            margin: 0;
+            font-family: monospace;
+            font-size: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .add-todo-form {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .add-todo-form h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .todo-list {
+            padding: 30px;
+        }
+
+        .todo-list h2 {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .todo-item {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .todo-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-item.completed {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+
+        .todo-item.completed .todo-title {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .todo-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .todo-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+
+        .todo-meta {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-complete {
+            background: #28a745;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .btn-incomplete {
+            background: #ffc107;
+            color: #333;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+            font-size: 14px;
+            padding: 8px 16px;
+        }
+
+        .no-todos {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 40px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #dc3545;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>My Todo App</h1>
+        
+        
+        
+        <!-- Add Todo Form -->
+        <div class="add-todo-form">
+            <h2>Add New Todo</h2>
+            <div id="successMessage" style="display: none;" class="success"></div>
+            <form id="todoForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="title">Title:</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="3" placeholder="Optional description..."></textarea>
+                </div>
+                <button type="submit">Add Todo</button>
+            </form>
+        </div>
+        
+        <!-- Todo List -->
+        <div class="todo-list">
+            <h2>Your Todos</h2>
+            <div id="todoContainer">
+                <div class="loading">Loading todos...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TodoApp {
+            constructor() {
+                this.apiUrl = '/api/todos/';
+                this.init();
+            }
+
+            init() {
+                console.log('🚀 TodoApp initializing...');
+                
+                // Show debug info
+                document.getElementById('currentUrl').textContent = window.location.href;
+                
+                this.bindEvents();
+                this.loadTodos();
+                this.testAPI();
+            }
+
+            async testAPI() {
+                try {
+                    console.log('🔍 Testing API connection...');
+                    const response = await fetch(this.apiUrl);
+                    console.log('📡 API Response:', response.status, response.statusText);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('✅ API Data:', data);
+                        document.getElementById('debugStatus').textContent = 'API Connected ✅';
+                        document.getElementById('debugStatus').style.color = 'green';
+                    } else {
+                        document.getElementById('debugStatus').textContent = `API Error: ${response.status}`;
+                        document.getElementById('debugStatus').style.color = 'red';
+                    }
+                } catch (error) {
+                    console.error('❌ API Test Error:', error);
+                    document.getElementById('debugStatus').textContent = `Connection Error: ${error.message}`;
+                    document.getElementById('debugStatus').style.color = 'red';
+                }
+            }
+
+            getCsrfToken() {
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                return csrfToken ? csrfToken.value : '';
+            }
+
+            bindEvents() {
+                const form = document.getElementById('todoForm');
+                form.addEventListener('submit', (e) => this.handleAddTodo(e));
+                console.log('🔗 Form events bound');
+            }
+
+            async loadTodos() {
+                try {
+                    console.log('📋 Loading todos...');
+                    const container = document.getElementById('todoContainer');
+                    container.innerHTML = '<div class="loading">Loading todos...</div>';
+
+                    const response = await fetch(this.apiUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📋 Todos loaded:', data);
+
+                    if (data.todos && data.todos.length > 0) {
+                        this.renderTodos(data.todos);
+                    } else {
+                        container.innerHTML = '<div class="no-todos">No todos yet. Add your first todo above! 🚀</div>';
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading todos:', error);
+                    document.getElementById('todoContainer').innerHTML = 
+                        `<div class="error">❌ Error loading todos: ${error.message}</div>`;
+                }
+            }
+
+            renderTodos(todos) {
+                console.log('🎨 Rendering todos:', todos.length);
+                const container = document.getElementById('todoContainer');
+                
+                const todosHtml = todos.map(todo => `
+                    <div class="todo-item ${todo.completed ? 'completed' : ''}" data-id="${todo.id}">
+                        <div class="todo-title">${this.escapeHtml(todo.title)}</div>
+                        ${todo.description ? `<div class="todo-description">${this.escapeHtml(todo.description)}</div>` : ''}
+                        <div class="todo-meta">
+                            Created: ${this.formatDate(todo.created_at)} 
+                            ${todo.updated_at !== todo.created_at ? `| Updated: ${this.formatDate(todo.updated_at)}` : ''}
+                        </div>
+                        <div class="todo-actions">
+                            <button class="btn-${todo.completed ? 'incomplete' : 'complete'}" 
+                                    onclick="todoApp.toggleComplete(${todo.id}, ${!todo.completed})">
+                                ${todo.completed ? '↩️ Mark Incomplete' : '✅ Mark Complete'}
+                            </button>
+                            <button class="btn-delete" onclick="todoApp.deleteTodo(${todo.id})">
+                                🗑️ Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = todosHtml;
+            }
+
+            showSuccess(message) {
+                const successDiv = document.getElementById('successMessage');
+                successDiv.textContent = message;
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    successDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            async handleAddTodo(e) {
+                e.preventDefault();
+                console.log('➕ Form submitted');
+                
+                const title = document.getElementById('title').value.trim();
+                const description = document.getElementById('description').value.trim();
+
+                if (!title) {
+                    alert('Please enter a title for your todo');
+                    return;
+                }
+
+                console.log('📝 Submitting todo:', { title, description });
+
+                try {
+                    const response = await fetch(this.apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCsrfToken(),
+                        },
+                        body: JSON.stringify({
+                            title: title,
+                            description: description
+                        })
+                    });
+
+                    console.log('📡 Submit response:', response.status, response.statusText);
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('✅ Todo added:', result);
+                        
+                        document.getElementById('todoForm').reset();
+                        this.showSuccess('Todo added successfully! 🎉');
+                        this.loadTodos();
+                    } else {
+                        const error = await response.json();
+                        console.error('❌ Server error:', error);
+                        alert('Error: ' + (error.error || 'Failed to add todo'));
+                    }
+                } catch (error) {
+                    console.error('❌ Error adding todo:', error);
+                    alert('Error adding todo: ' + error.message);
+                }
+            }
+
+            async toggleComplete(todoId, completed) {
+                console.log('🔄 Toggling todo:', todoId, completed);
+                try {
+                    const response = await fetch(`${this.apiUrl}${todoId}/`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.getCsrfToken(),
+                        },
+                        body: JSON.stringify({
+                            completed: completed
+                        })
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Todo updated');
+                        this.loadTodos();
+                    } else {
+                        alert('Error updating todo');
+                    }
+                } catch (error) {
+                    console.error('❌ Error updating todo:', error);
+                    alert('Error updating todo: ' + error.message);
+                }
+            }
+
+            async deleteTodo(todoId) {
+                if (!confirm('Are you sure you want to delete this todo? 🗑️')) {
+                    return;
+                }
+
+                console.log('🗑️ Deleting todo:', todoId);
+                try {
+                    const response = await fetch(`${this.apiUrl}${todoId}/`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': this.getCsrfToken(),
+                        }
+                    });
+
+                    if (response.ok) {
+                        console.log('✅ Todo deleted');
+                        this.loadTodos();
+                    } else {
+                        alert('Error deleting todo');
+                    }
+                } catch (error) {
+                    console.error('❌ Error deleting todo:', error);
+                    alert('Error deleting todo: ' + error.message);
+                }
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            formatDate(dateString) {
+                const date = new Date(dateString);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            }
+        }
+
+        // Initialize the app when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📄 DOM loaded, initializing TodoApp...');
+            window.todoApp = new TodoApp();
+        });
+
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            console.error('🚨 Global error:', e.error);
+        });
+    </script>
+</body>
+</html>
